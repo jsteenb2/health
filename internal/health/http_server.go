@@ -18,7 +18,7 @@ func NewHTTPServer(svc SVC) *HTTPServer {
 
 	mux := http.NewServeMux()
 	{
-		mux.Handle("/health/checkRoutes", http.StripPrefix("/health", http.HandlerFunc(svr.checkRoutes)))
+		mux.Handle("/health/checks", http.StripPrefix("/health", http.HandlerFunc(svr.checkRoutes)))
 	}
 	svr.mux = mux
 
@@ -53,7 +53,12 @@ func (s *HTTPServer) create(w http.ResponseWriter, r *http.Request) {
 
 	c, err := s.svc.Create(r.Context(), body.Endpoint)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		switch err {
+		case errInvalidEndpoint:
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		default:
+			http.Error(w, "unexpected error", http.StatusInternalServerError)
+		}
 		return
 	}
 
