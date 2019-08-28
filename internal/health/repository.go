@@ -66,13 +66,7 @@ func (r *fileRepository) Create(check Check) error {
 
 	newChecks := append(r.checks, check)
 
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(newChecks); err != nil {
-		return err
-	}
-
-	err := ioutil.WriteFile(r.filepath, buf.Bytes(), 666)
-	if err != nil {
+	if err := r.toDisk(newChecks); err != nil {
 		return err
 	}
 
@@ -105,11 +99,41 @@ func (r *fileRepository) List(page, size int) (int, []Check) {
 var errCheckNotFound = errors.New("check not found by the provided id")
 
 func (r *fileRepository) Read(id string) (Check, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	check, found := r.checks.find(id)
 	if !found {
 		return Check{}, errCheckNotFound
 	}
 	return check, nil
+}
+
+func (r *fileRepository) Delete(id string) error {
+	out := make([]Check, 0, len(r.checks)-1)
+	for _, check := range r.checks {
+		if id == check.ID {
+			continue
+		}
+		out = append(out, check)
+	}
+
+	if err := r.toDisk(out); err != nil {
+		return err
+	}
+
+	r.checks = out
+	return nil
+}
+
+func (r *fileRepository) toDisk(c []Check) error {
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(c)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(r.filepath, buf.Bytes(), 666)
 }
 
 type checks []Check

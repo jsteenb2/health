@@ -20,12 +20,14 @@ type SVC interface {
 	Create(endpoint string) (Check, error)
 	Read(id string) (Check, error)
 	List(page int) (total, currentPage int, checks []Check)
+	Delete(id string) error
 }
 
 type Repository interface {
 	Create(check Check) error
 	List(page, size int) (total int, checks []Check)
 	Read(id string) (Check, error)
+	Delete(id string) error
 }
 
 type service struct {
@@ -77,10 +79,24 @@ func (s *service) List(page int) (int, int, []Check) {
 var errInvalidID = errors.New("invalid id provided")
 
 func (s *service) Read(id string) (Check, error) {
-	if len(id) != 44 {
-		return Check{}, errInvalidID
+	if err := validID(id); err != nil {
+		return Check{}, err
 	}
 	return s.repo.Read(id)
+}
+
+func (s *service) Delete(id string) error {
+	if err := validID(id); err != nil {
+		return err
+	}
+	return s.repo.Delete(id)
+}
+
+func validID(id string) error {
+	if len(id) != 44 {
+		return errInvalidID
+	}
+	return nil
 }
 
 func validateURL(endpoint string) (*url.URL, error) {

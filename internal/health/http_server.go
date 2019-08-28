@@ -41,11 +41,13 @@ func (s *HTTPServer) routes(w http.ResponseWriter, r *http.Request) {
 		}
 	case strings.HasPrefix(r.URL.Path, "/checks/"):
 		parts := strings.Split(r.URL.Path, "/")
-		switch len(parts) {
-		case 3: // route => /checks/:id
+		switch {
+		case len(parts) == 3: // route => /checks/:id
 			switch r.Method {
 			case http.MethodGet:
 				s.read(w, r)
+			case http.MethodDelete:
+				s.delete(w, r)
 			default:
 				http.Error(w, "unsupported HTTP method", http.StatusMethodNotAllowed)
 			}
@@ -137,6 +139,22 @@ func (s *HTTPServer) read(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func (s *HTTPServer) delete(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/checks/")
+
+	if err := s.svc.Delete(id); err != nil {
+		switch err {
+		case errInvalidID:
+			w.WriteHeader(http.StatusUnprocessableEntity)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func prettyEncoder(w io.Writer) *json.Encoder {
