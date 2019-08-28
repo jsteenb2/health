@@ -83,7 +83,7 @@ func (s *HTTPServer) create(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) list(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 
-	total, c := s.svc.List(page)
+	total, currentPage, c := s.svc.List(page)
 
 	w.WriteHeader(http.StatusOK)
 
@@ -94,7 +94,7 @@ func (s *HTTPServer) list(w http.ResponseWriter, r *http.Request) {
 		Size  int     `json:"size"`
 	}{
 		Items: c,
-		Page:  page,
+		Page:  currentPage,
 		Total: total,
 		Size:  10,
 	}

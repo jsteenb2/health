@@ -92,9 +92,10 @@ func TestService(t *testing.T) {
 
 		svc := health.NewSVC(repo)
 
-		total, checks := svc.List(1)
+		total, currentPage, checks := svc.List(1)
 
 		equal(t, 1, total, "unexpected total")
+		equal(t, 1, currentPage, "unexpected page number")
 		mustEqual(t, 1, len(checks), "unexpected num of checks")
 		equal(t, "id", checks[0].ID, "unexpected id")
 		equal(t, int64(10), checks[0].Checked, "unexpected checked")

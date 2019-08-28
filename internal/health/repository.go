@@ -89,12 +89,12 @@ func (r *fileRepository) List(page, size int) (int, []Check) {
 		return total, r.checks
 	}
 
-	start := size * page
+	start := size * (page - 1)
 	if start >= len(r.checks) {
 		return total, []Check{}
 	}
 
-	end := size * (page + 1)
+	end := size * (page)
 	if end > len(r.checks) {
 		end = len(r.checks)
 	}

@@ -49,14 +49,14 @@ func TestHTTPServer(t *testing.T) {
 	t.Run("list provides list of all endpoints paginated", func(t *testing.T) {
 		t.Run("happy path", func(t *testing.T) {
 			svc := &fakeSVC{
-				listFn: func(page int) (int, []health.Check) {
+				listFn: func(page int) (int, int, []health.Check) {
 					out := make([]health.Check, 0, 10)
 					for i := 1; i <= 10; i++ {
 						out = append(out, health.Check{
 							Checked: int64(page*10 + i),
 						})
 					}
-					return 1000, out
+					return 1000, page, out
 				},
 			}
 
@@ -129,7 +129,7 @@ func encodeBody(t *testing.T, v interface{}) *bytes.Buffer {
 
 type fakeSVC struct {
 	createFn func(endpoint string) (health.Check, error)
-	listFn   func(page int) (int, []health.Check)
+	listFn   func(page int) (int, int, []health.Check)
 }
 
 func (f *fakeSVC) Create(endpoint string) (health.Check, error) {
@@ -139,7 +139,7 @@ func (f *fakeSVC) Create(endpoint string) (health.Check, error) {
 	return f.createFn(endpoint)
 }
 
-func (f *fakeSVC) List(page int) (int, []health.Check) {
+func (f *fakeSVC) List(page int) (int, int, []health.Check) {
 	if f.listFn == nil {
 		panic("list not implemented")
 	}

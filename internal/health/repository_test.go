@@ -141,13 +141,13 @@ func TestFileRepository(t *testing.T) {
 			mustNoError(t, err)
 
 			size := 5
-			for page := 0; page < 4; page++ {
+			for page := 1; page < 5; page++ {
 				total, checks := repo.List(page, size)
 
 				equal(t, len(stubChecks), total, "total endpoint checks")
 				mustEqual(t, size, len(checks), "page size")
 				for i := 0; i < size; i++ {
-					equal(t, stubChecks[i+page*size], checks[i], "unexpected endpoint")
+					equal(t, stubChecks[i+(page-1)*size], checks[i], "unexpected endpoint")
 				}
 			}
 		})
@@ -177,7 +177,7 @@ func TestFileRepository(t *testing.T) {
 			repo, err := health.NewFileRepository(filePath)
 			mustNoError(t, err)
 
-			total, checks := repo.List(1, 19)
+			total, checks := repo.List(2, 19)
 			equal(t, len(stubChecks), total, "total endpoint checks")
 			mustEqual(t, 1, len(checks), "page size")
 			equal(t, stubChecks[len(stubChecks)-1], checks[0], "unexpected endpoint check")
