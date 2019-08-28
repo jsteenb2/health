@@ -39,6 +39,7 @@ func TestService(t *testing.T) {
 			mustNoError(t, err)
 
 			equal(t, endpoint, c.Endpoint, "invalid endpoint")
+			equal(t, "Created", c.Status, "invalid status")
 			validateID(t, endpoint, c.ID)
 		})
 

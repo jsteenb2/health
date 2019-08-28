@@ -55,6 +55,7 @@ func (s *service) Create(endpoint string) (Check, error) {
 
 	newCheck := Check{
 		ID:       id,
+		Status:   "Created",
 		Endpoint: u.String(),
 	}
 	if err := s.repo.Create(newCheck); err != nil {
