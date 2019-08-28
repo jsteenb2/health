@@ -54,7 +54,7 @@ func (s *HTTPServer) create(w http.ResponseWriter, r *http.Request) {
 	c, err := s.svc.Create(body.Endpoint)
 	if err != nil {
 		switch err {
-		case errInvalidEndpoint:
+		case errInvalidEndpoint, errEndpointExists:
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		default:
 			http.Error(w, "unexpected error", http.StatusInternalServerError)
