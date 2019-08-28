@@ -46,7 +46,7 @@ func checksFromPersistence(filepath string) ([]Check, error) {
 	}
 	defer f.Close()
 
-	var existing []Check
+	existing := make([]Check, 0)
 	err = gob.NewDecoder(f).Decode(&existing)
 	if err != nil && err != io.EOF {
 		return nil, err
@@ -80,13 +80,26 @@ func (r *fileRepository) Create(check Check) error {
 	return nil
 }
 
-func (r *fileRepository) List(page, size int) []Check {
+func (r *fileRepository) List(page, size int) (int, []Check) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	total := len(r.checks)
 	if size == -1 {
-		return r.checks
+		return total, r.checks
 	}
-	return r.checks[size*page : size*(page+1)]
+
+	start := size * page
+	if start >= len(r.checks) {
+		return total, []Check{}
+	}
+
+	end := size * (page + 1)
+	if end > len(r.checks) {
+		end = len(r.checks)
+	}
+
+	return total, r.checks[start:end]
 }
 
 type checks []Check

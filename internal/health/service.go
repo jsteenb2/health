@@ -18,11 +18,12 @@ type Check struct {
 
 type SVC interface {
 	Create(endpoint string) (Check, error)
+	List(page int) (int, []Check)
 }
 
 type Repository interface {
 	Create(check Check) error
-	List(page, size int) []Check
+	List(page, size int) (total int, checks []Check)
 }
 
 type service struct {
@@ -60,6 +61,10 @@ func (s *service) Create(endpoint string) (Check, error) {
 		return Check{}, err
 	}
 	return newCheck, nil
+}
+
+func (s *service) List(page int) (int, []Check) {
+	return s.repo.List(page, 10)
 }
 
 func validateURL(endpoint string) (*url.URL, error) {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type HTTPServer struct {
@@ -33,6 +34,8 @@ func (s *HTTPServer) checkRoutes(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.URL.Path == "/checks":
 		switch r.Method {
+		case http.MethodGet:
+			s.list(w, r)
 		case http.MethodPost:
 			s.create(w, r)
 		default:
@@ -73,6 +76,32 @@ func (s *HTTPServer) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	if err := prettyEncoder(w).Encode(resp); err != nil {
 		http.Error(w, "unexpected error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *HTTPServer) list(w http.ResponseWriter, r *http.Request) {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+
+	total, c := s.svc.List(page)
+
+	w.WriteHeader(http.StatusOK)
+
+	body := struct {
+		Items []Check `json:"items"`
+		Page  int     `json:"page"`
+		Total int     `json:"total"`
+		Size  int     `json:"size"`
+	}{
+		Items: c,
+		Page:  page,
+		Total: total,
+		Size:  10,
+	}
+
+	err := prettyEncoder(w).Encode(body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }

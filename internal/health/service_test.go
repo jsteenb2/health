@@ -81,10 +81,28 @@ func TestService(t *testing.T) {
 			equal(t, expectedErr, err, "did not receive expected repo error")
 		})
 	})
+
+	t.Run("list", func(t *testing.T) {
+		repo := &fakeRepo{
+			listFn: func(page, size int) (int, []health.Check) {
+				return page, []health.Check{{ID: "id", Checked: int64(size)}}
+			},
+		}
+
+		svc := health.NewSVC(repo)
+
+		total, checks := svc.List(1)
+
+		equal(t, 1, total, "unexpected total")
+		mustEqual(t, 1, len(checks), "unexpected num of checks")
+		equal(t, "id", checks[0].ID, "unexpected id")
+		equal(t, int64(10), checks[0].Checked, "unexpected checked")
+	})
 }
 
 type fakeRepo struct {
 	createFn func(check health.Check) error
+	listFn   func(page, size int) (int, []health.Check)
 }
 
 func (f *fakeRepo) Create(check health.Check) error {
@@ -94,6 +112,9 @@ func (f *fakeRepo) Create(check health.Check) error {
 	return f.createFn(check)
 }
 
-func (f *fakeRepo) List(page, size int) []health.Check {
-	panic("not implemented yet")
+func (f *fakeRepo) List(page, size int) (int, []health.Check) {
+	if f.listFn == nil {
+		panic("not implemented")
+	}
+	return f.listFn(page, size)
 }
