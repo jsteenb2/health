@@ -183,6 +183,35 @@ func TestFileRepository(t *testing.T) {
 			equal(t, stubChecks[len(stubChecks)-1], checks[0], "unexpected endpoint check")
 		})
 	})
+
+	t.Run("read", func(t *testing.T) {
+		stubChecks := make([]health.Check, 0, 20)
+		for i := range make([]struct{}, 20) {
+			stubChecks = append(stubChecks, health.Check{
+				ID: strconv.Itoa(i),
+			})
+		}
+
+		tmpDir := newTempDir(t)
+		defer os.RemoveAll(tmpDir)
+
+		filePath := filepath.Join(tmpDir, "tmp_file")
+
+		newFileWithChecks(t, filePath, stubChecks...)
+
+		t.Run("when an endpoint exists at the provided id should return it", func(t *testing.T) {
+			repo, err := health.NewFileRepository(filePath)
+			mustNoError(t, err)
+
+			for i := range make([]struct{}, 2) {
+				id := strconv.Itoa(i)
+				check, err := repo.Read(id)
+				mustNoError(t, err)
+
+				equal(t, id, check.ID, "unexpected id")
+			}
+		})
+	})
 }
 
 func mustNoError(t *testing.T, err error) {

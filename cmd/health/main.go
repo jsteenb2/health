@@ -42,10 +42,10 @@ func main() {
 
 	var api http.Handler
 	{
-		h := http.NewServeMux()
-		healthHandler := health.NewHTTPServer(healthSVC)
-		h.Handle("/api/health/checks", http.StripPrefix("/api", healthHandler))
-		api = httpmw.Recover()(h)
+		// prefix the health handler with /api and use the behavior of http.StripPrefix
+		// to provide a 404 if the route does not have a prefix of /api
+		api = http.StripPrefix("/api", health.NewHTTPServer(healthSVC))
+		api = httpmw.Recover()(api)
 		api = httpmw.ContentType("application/json")(api)
 	}
 

@@ -102,6 +102,16 @@ func (r *fileRepository) List(page, size int) (int, []Check) {
 	return total, r.checks[start:end]
 }
 
+var errCheckNotFound = errors.New("check not found by the provided id")
+
+func (r *fileRepository) Read(id string) (Check, error) {
+	check, found := r.checks.find(id)
+	if !found {
+		return Check{}, errCheckNotFound
+	}
+	return check, nil
+}
+
 type checks []Check
 
 func (c checks) find(id string) (Check, bool) {

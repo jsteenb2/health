@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/jsteenb2/health/internal/health"
@@ -100,11 +101,46 @@ func TestService(t *testing.T) {
 		equal(t, "id", checks[0].ID, "unexpected id")
 		equal(t, int64(10), checks[0].Checked, "unexpected checked")
 	})
+
+	t.Run("read", func(t *testing.T) {
+		t.Run("when a valid id for an existing item is provided should return the endpoint check", func(t *testing.T) {
+			repo := &fakeRepo{
+				readFn: func(id string) (health.Check, error) {
+					return health.Check{ID: id}, nil
+				},
+			}
+
+			svc := health.NewSVC(repo)
+
+			// len 44 string required as that is the length of the md5 sum
+			// of the given endpoints
+			id := strings.Repeat("a", 44)
+			check, err := svc.Read(id)
+			mustNoError(t, err)
+
+			equal(t, id, check.ID, "unexpected id")
+		})
+
+		t.Run("when an invalid id is provided should return an error", func(t *testing.T) {
+			repo := &fakeRepo{
+				readFn: func(id string) (health.Check, error) {
+					return health.Check{ID: id}, nil
+				},
+			}
+
+			svc := health.NewSVC(repo)
+
+			id := "invalid id must be length 44"
+			_, err := svc.Read(id)
+			mustError(t, err)
+		})
+	})
 }
 
 type fakeRepo struct {
 	createFn func(check health.Check) error
 	listFn   func(page, size int) (int, []health.Check)
+	readFn   func(id string) (health.Check, error)
 }
 
 func (f *fakeRepo) Create(check health.Check) error {
@@ -119,4 +155,11 @@ func (f *fakeRepo) List(page, size int) (int, []health.Check) {
 		panic("not implemented")
 	}
 	return f.listFn(page, size)
+}
+
+func (f *fakeRepo) Read(id string) (health.Check, error) {
+	if f.readFn == nil {
+		panic("not implemented yet")
+	}
+	return f.readFn(id)
 }

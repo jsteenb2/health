@@ -91,6 +91,46 @@ func TestHTTPServer(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("read", func(t *testing.T) {
+		t.Run("when endpoint exists should return it without error", func(t *testing.T) {
+			svc := &fakeSVC{
+				readFn: func(id string) (health.Check, error) {
+					return health.Check{
+						ID:       id,
+						Status:   "OK",
+						Code:     200,
+						Endpoint: "http://example.com",
+						Checked:  10,
+						Duration: "10ms",
+					}, nil
+				},
+			}
+
+			svr := health.NewHTTPServer(svc)
+
+			endpointID := "id-1"
+			req := httptest.NewRequest(http.MethodGet, "/health/checks/"+endpointID, nil)
+			rec := httptest.NewRecorder()
+
+			svr.ServeHTTP(rec, req)
+
+			mustEqual(t, http.StatusOK, rec.Code, "bad status code")
+
+			var resp health.Check
+			decodeBody(t, rec.Body, &resp)
+
+			expectedCheck := health.Check{
+				ID:       endpointID,
+				Status:   "OK",
+				Code:     200,
+				Endpoint: "http://example.com",
+				Checked:  10,
+				Duration: "10ms",
+			}
+			equal(t, expectedCheck, resp, "endpoint check do not match")
+		})
+	})
 }
 
 func mustEqual(t *testing.T, expected, got interface{}, msg string) {
@@ -130,6 +170,7 @@ func encodeBody(t *testing.T, v interface{}) *bytes.Buffer {
 type fakeSVC struct {
 	createFn func(endpoint string) (health.Check, error)
 	listFn   func(page int) (int, int, []health.Check)
+	readFn   func(id string) (health.Check, error)
 }
 
 func (f *fakeSVC) Create(endpoint string) (health.Check, error) {
@@ -144,4 +185,11 @@ func (f *fakeSVC) List(page int) (int, int, []health.Check) {
 		panic("list not implemented")
 	}
 	return f.listFn(page)
+}
+
+func (f *fakeSVC) Read(id string) (health.Check, error) {
+	if f.readFn == nil {
+		panic("read not implemented")
+	}
+	return f.readFn(id)
 }
