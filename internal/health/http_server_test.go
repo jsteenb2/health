@@ -2,7 +2,6 @@ package health_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -16,7 +15,7 @@ func TestHTTPServer(t *testing.T) {
 	t.Run("create new endpoint check", func(t *testing.T) {
 		t.Run("happy path", func(t *testing.T) {
 			svc := &fakeSVC{
-				createFn: func(ctx context.Context, endpoint string) (health.Check, error) {
+				createFn: func(endpoint string) (health.Check, error) {
 					return health.Check{
 						ID:       "id",
 						Endpoint: endpoint,
@@ -82,12 +81,12 @@ func encodeBody(t *testing.T, v interface{}) *bytes.Buffer {
 }
 
 type fakeSVC struct {
-	createFn func(ctx context.Context, endpoint string) (health.Check, error)
+	createFn func(endpoint string) (health.Check, error)
 }
 
-func (f *fakeSVC) Create(ctx context.Context, endpoint string) (health.Check, error) {
+func (f *fakeSVC) Create(endpoint string) (health.Check, error) {
 	if f.createFn == nil {
 		panic("create not implemented")
 	}
-	return f.createFn(ctx, endpoint)
+	return f.createFn(endpoint)
 }

@@ -1,7 +1,6 @@
 package health
 
 import (
-	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -18,11 +17,12 @@ type Check struct {
 }
 
 type SVC interface {
-	Create(ctx context.Context, endpoint string) (Check, error)
+	Create(endpoint string) (Check, error)
 }
 
 type Repository interface {
-	Create(ctx context.Context, check Check) (Check, error)
+	Create(check Check) error
+	List(page, size int) []Check
 }
 
 type service struct {
@@ -41,7 +41,7 @@ var (
 	errInvalidEndpoint = errors.New("endpoint must be a valid absolute URL")
 )
 
-func (s *service) Create(ctx context.Context, endpoint string) (Check, error) {
+func (s *service) Create(endpoint string) (Check, error) {
 	u, err := validateURL(endpoint)
 	if err != nil {
 		return Check{}, errInvalidEndpoint
@@ -52,10 +52,14 @@ func (s *service) Create(ctx context.Context, endpoint string) (Check, error) {
 		return Check{}, errors.New("unexpected error")
 	}
 
-	return s.repo.Create(ctx, Check{
+	newCheck := Check{
 		ID:       id,
 		Endpoint: u.String(),
-	})
+	}
+	if err := s.repo.Create(newCheck); err != nil {
+		return Check{}, err
+	}
+	return newCheck, nil
 }
 
 func validateURL(endpoint string) (*url.URL, error) {

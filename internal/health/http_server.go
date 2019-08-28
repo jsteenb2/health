@@ -51,7 +51,7 @@ func (s *HTTPServer) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c, err := s.svc.Create(r.Context(), body.Endpoint)
+	c, err := s.svc.Create(body.Endpoint)
 	if err != nil {
 		switch err {
 		case errInvalidEndpoint:

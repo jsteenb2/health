@@ -1,7 +1,6 @@
 package health_test
 
 import (
-	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -11,23 +10,35 @@ import (
 )
 
 func TestService(t *testing.T) {
+	validateID := func(t *testing.T, endpoint string, got string) {
+		t.Helper()
+
+		// validates that IDs' area created in this fashion
+		// test driven here why there is going to be duplicate
+		// code in service.
+
+		h := md5.New()
+		_, err := h.Write([]byte(endpoint))
+		mustNoError(t, err)
+
+		expected := fmt.Sprintf("%x", h.Sum([]byte("tyrael")))
+		if expected != got {
+			t.Errorf("unexpected hash value: expected=%q got %q", expected, got)
+		}
+	}
+
 	t.Run("create", func(t *testing.T) {
 		t.Run("happy path", func(t *testing.T) {
 			repo := &fakeRepo{
-				createFn: func(ctx context.Context, check health.Check) (health.Check, error) {
-					return check, nil
-				},
+				createFn: func(check health.Check) error { return nil },
 			}
 			svc := health.NewSVC(repo)
 
 			endpoint := "http://www.example.com"
-			c, err := svc.Create(context.TODO(), endpoint)
-			if err != nil {
-				t.Fatalf("unexpected err: got=%s", err.Error())
-			}
+			c, err := svc.Create(endpoint)
+			mustNoError(t, err)
 
 			equal(t, endpoint, c.Endpoint, "invalid endpoint")
-			t.Log(c.ID)
 			validateID(t, endpoint, c.ID)
 		})
 
@@ -45,16 +56,12 @@ func TestService(t *testing.T) {
 			for _, tt := range tests {
 				fn := func(t *testing.T) {
 					repo := &fakeRepo{
-						createFn: func(ctx context.Context, check health.Check) (health.Check, error) {
-							return check, nil
-						},
+						createFn: func(check health.Check) error { return nil },
 					}
 					svc := health.NewSVC(repo)
 
-					_, err := svc.Create(context.TODO(), tt.endpoint)
-					if err == nil {
-						t.Fatal("did not receive expected error")
-					}
+					_, err := svc.Create(tt.endpoint)
+					mustError(t, err)
 				}
 
 				t.Run(tt.name, fn)
@@ -64,46 +71,29 @@ func TestService(t *testing.T) {
 		t.Run("repo throws an error on creation", func(t *testing.T) {
 			expectedErr := errors.New("rando create error here")
 			repo := &fakeRepo{
-				createFn: func(ctx context.Context, check health.Check) (health.Check, error) {
-					return check, expectedErr
+				createFn: func(check health.Check) error {
+					return expectedErr
 				},
 			}
 			svc := health.NewSVC(repo)
 
-			_, err := svc.Create(context.TODO(), "http://example.com")
-			if expectedErr != err {
-				t.Fatalf("did not receive expected repo error: expected=%q got=%q", expectedErr, err)
-			}
+			_, err := svc.Create("http://example.com")
+			equal(t, expectedErr, err, "did not receive expected repo error")
 		})
 	})
 }
 
-func validateID(t *testing.T, endpoint string, got string) {
-	t.Helper()
-
-	// validates that IDs' area created in this fashion
-	// test driven here why there is going to be duplicate
-	// code in service.
-
-	h := md5.New()
-	_, err := h.Write([]byte(endpoint))
-	if err != nil {
-		t.Fatal("unexpected hash error: ", err.Error())
-	}
-
-	expected := fmt.Sprintf("%x", h.Sum([]byte("tyrael")))
-	if expected != got {
-		t.Errorf("unexpected hash value: expected=%q got %q", expected, got)
-	}
-}
-
 type fakeRepo struct {
-	createFn func(ctx context.Context, check health.Check) (health.Check, error)
+	createFn func(check health.Check) error
 }
 
-func (f *fakeRepo) Create(ctx context.Context, check health.Check) (health.Check, error) {
+func (f *fakeRepo) Create(check health.Check) error {
 	if f.createFn == nil {
-		panic("not implemented yet")
+		panic("no createFn set")
 	}
-	return f.createFn(ctx, check)
+	return f.createFn(check)
+}
+
+func (f *fakeRepo) List(page, size int) []health.Check {
+	panic("not implemented yet")
 }
