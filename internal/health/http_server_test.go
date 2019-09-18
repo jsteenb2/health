@@ -131,6 +131,12 @@ func TestHTTPServer(t *testing.T) {
 			equal(t, expectedCheck, resp, "endpoint check do not match")
 		})
 	})
+
+	t.Run("delete", func(t *testing.T) {
+		t.Run("when endpoint exists should delete it without error", func(t *testing.T) {
+
+		})
+	})
 }
 
 func mustEqual(t *testing.T, expected, got interface{}, msg string) {
